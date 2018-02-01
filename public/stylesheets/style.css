@@ -1,0 +1,77 @@
+body {
+    padding: 50px;
+    margin: 0 auto;
+    font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+a {
+    color: #00B7FF;
+}
+
+select{
+    border: 0px;
+    overflow: auto;
+}
+select:focus {
+    border: 0px;
+
+}
+#container{width: 800px;margin-left: 200px;}
+#graph {
+    border: 1px solid #87ceeb;
+    cursor: url(../images/Pen.cur), auto;
+
+}
+#graph:hover {
+
+    cursor: url(../images/Pen.cur), auto;
+
+}
+#userlist {
+    width: 200px;
+    height: 490px;
+    border: 1px solid #87ceeb;
+    float: left;
+    margin-left: 10px;;
+    padding: 5px 0;
+}
+
+#users {
+    width: 200px;
+}
+
+#message {
+    height: 100px;
+    overflow-y: auto;
+}
+
+#messagebox {
+    clear: both;
+    width: 712px;
+    border: 1px solid #87ceeb;
+}
+
+#drawCanvas{
+    float: left;
+    width: 500px;
+}
+
+#drawCanvas #colorSelector{
+
+    background-color: #000;
+}
+.colorpicker input{
+    border: 0px;
+    border-color: transparent;
+   width: 50px;
+}
+.colorpicker input:focus,.colorpicker input:hover{
+    border: 0px;
+    border-color: transparent;
+    -webkit-box-shadow: 0
+    -moz-box-shadow: 0
+    box-shadow: 0
+}
+#tools{
+    float: left;
+}

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title><%= title %></title>
+
+    <!-- 最新 Bootstrap 核心 CSS 文件 -->
+    <link rel="stylesheet" href="http://cdn.bootcss.com/twitter-bootstrap/3.0.3/css/bootstrap.min.css">
+
+    <!-- 可选的Bootstrap主题文件（一般不用引入） -->
+    <link rel="stylesheet" href="http://cdn.bootcss.com/twitter-bootstrap/3.0.3/css/bootstrap-theme.min.css">
+
+  <!--  <link rel='stylesheet' href='/stylesheets/bootstrap.css'/>-->
+    <link rel="stylesheet" media="screen" type="text/css" href="stylesheets/colorpicker.css" />
+    <link rel='stylesheet' href='/stylesheets/style.css'/>
+    <link href="favicon.ico" type="image/x-icon" rel="shortcut icon">
+
+
+</head>
+<body onselectstart="return false">
+<div id="container" >
+    <div id="drawCanvas">
+        <canvas id="graph" width="500" height="500">
+            您的浏览器不支持,请使用chrome、firefox浏览器
+        </canvas>
+     <!-- <div id="tools"  class="input-prepend" >
+
+         <input type="button"  class="btn"   id="colorSelector" value="Color">
+         <input type="button"  class="btn"  value="SaveAs" id="saveas">
+         <input type="button"  class="btn"  value="铅笔" id="pen">
+         <input type="button"  class="btn"  value="橡皮擦" id="eraser">
+         <input type="button"  class="btn"  value="清空" id="clearpaint">
+     </div> -->
+    </div>
+
+    <div id="userlist">
+        <h2>用户列表</h2>
+        <select id="users" multiple="multiple">
+        </select>
+    </div>
+    <div id="messagebox">
+        <div id="message"></div>
+        <div id="messageinput">
+            <form action="javascript:;">
+                <div class="input-prepend">
+                    <div class="btn-group">
+                        <!-- <button class="btn dropdown-toggle" type="button" data-toggle="dropdown">
+                            <span>发送给...</span>
+                            <span class="caret"></span>
+                        </button> -->
+                        <ul class="dropdown-menu">
+                            <ul><a href="#">私信</a></ul>
+                            <ul><a href="#">广播</a></ul>
+                        </ul>
+                    </div>
+                    <input class="span4" id="msg" type="text">
+                    <input class="btn tj" type="submit" value="send"/>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" data-backdrop="false" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="myModalLabel">请设置用户名</h4>
+            </div>
+            <div class="modal-body">
+               <input type="text" placeholder="用户名" id="username"  required=""/>
+            </div>
+            <div class="modal-footer">
+
+                <button type="button" class="btn btn-primary" id="gotoAPP">GO</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
+<script src="js/jquery-1.10.0.js"></script>
+
+<!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+<script src="http://cdn.bootcss.com/twitter-bootstrap/3.0.3/js/bootstrap.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+
+<script src="js/jquery.mpaint.js"></script>
+<script   src="js/colorpicker.js"></script>
+<script   src="js/cookie.js"></script>
+
+<!--[if lt IE 9]><script type="text/javascript" src="js/excanvas.js"></script><![endif]-->
+<script>
+    $(function () {
+
+        if (window.console == 'undefined') {
+            window.console.log = function () {
+            }
+        }
+
+
+
+        var socket = io.connect(window.location.origin);
+
+        var userName ;
+        var userList ;
+        var drawData ;
+
+        var addNameToList = function (name) {
+            var user = $("#users");
+            $("<option value='" + name + "'>" + name + "</option>").appendTo(user);
+        }
+
+        function renderUserList(userList){
+            var user = $("#users");
+            user.html("");
+            $.each(userList, function (index, item) {
+                var name = item;
+                $("<option value='" + name + "'>" + name + "</option>").appendTo(user);
+            })
+            
+        }
+
+        function renderDraw(data) {
+
+
+            var canvas = document.getElementById('graph');
+            var ctx = canvas.getContext('2d');
+            var ex, ey, e = data;
+            ctx.fillStyle = "#222";
+            $("#graph").MPaint.SetColor(ctx.strokeStyle);
+            ctx.strokeStyle = e.color||"#000";
+            ctx.lineWidth = 5;
+            ctx.lineJoin = "round";
+
+            if (e.sx && e.sy) {
+                ex = e.sx;
+                ey = e.sy;
+                ctx.beginPath();
+                ctx.moveTo(ex, ey);
+            }
+            if (e.ex && e.ey) {
+
+                ctx.moveTo(ex, ey);
+                ctx.lineTo(e.ex, e.ey);
+                ctx.stroke();
+            }
+        }
+
+        function showMsg(msg){
+          $("#message").html($("#message").html() + msg + "<br/>");
+            var m = $("#message")[0];
+            m.scrollTop = m.scrollHeight
+        }
+
+
+        socket.on('connect', function () {
+
+            
+           // var name = Math.random() * 1000;
+              //socket.emit('set_nickname', name);
+            //addNameToList(name);
+
+        });
+
+        socket.on('init', function(data){
+
+            userName = data.userName;
+            userList = data.userList;
+            drawData = data.drawData;
+
+            console.log(data)
+
+            renderUserList(userList);
+
+            // 如果没有用户，让用户手动设置用户名
+            if(!userName){
+                
+                $('#myModal').modal('show');
+
+                $("#gotoAPP").on("click",function(){
+                    var name=$("#username").val();
+
+                    if(name){
+                        socket.emit('set_nickname', name);
+                    }
+                })
+
+            }
+
+            if(drawData){
+                drawData.forEach(function(d){
+                    renderDraw(d);
+                });
+                
+            }
+
+        });
+
+        socket.on('add_user', function(names){
+            renderUserList(names);
+            $('#myModal').modal('hide');
+        });
+
+        socket.on('user-reset', renderUserList);
+
+        socket.on('user-add', function(names, name){
+          showMsg(name + '进入房间')
+          renderUserList(names);
+        });
+
+        socket.on('user-remove', function(names, name){
+          showMsg(name + '离开房间')
+          renderUserList(names);
+        });
+
+        socket.emit('error', function(data){
+            alert(data.message);
+        })
+
+        socket.on('draw', renderDraw);
+
+        socket.on("msg", function (data) {
+            $("#message").html($("#message").html() + data + "<br/>");
+            var m = $("#message")[0];
+            m.scrollTop = m.scrollHeight
+        });
+        //var snd = new Audio("images/pen.mp3"); // buffers automatically when created
+        $("#graph").MPaint({
+            drawReady: function (e) {
+                socket.emit('draw', { sx: e.x, sy: e.y,color: $("#graph").MPaint.GetColor() });
+
+            },
+            drawBegin: function (e) {
+                socket.emit('draw', { ex: e.x, ey: e.y,color: $("#graph").MPaint.GetColor() });
+                //snd.play();
+            },
+            drawEnd: function (e) {
+            }
+        });
+
+        $(".tj").on("click", function () {
+            var msg = $("#msg").val();
+            var msgData={
+                id:$("#users option:selected").text(),
+                msg:msg
+            }
+            socket.emit("msg", msgData);
+
+            $("#message").html($("#message").html() + "<span style='color: red'>您说:" + msg + "</span><br>");
+            var m = $("#message")[0];
+            m.scrollTop = m.scrollHeight
+            var msg = $("#msg").val("");
+            return false;
+        })
+    /*    $(document).on("keydown", function (e) {
+            if (e.keyCode >= 32 && e.keyCode <= 126) {
+                $("#msg").focus();
+            }
+        })*/
+        $('#colorSelector').ColorPicker({
+            color: '#000',
+            onShow: function (colpkr) {
+                $(colpkr).fadeIn(500);
+                return false;
+            },
+            onHide: function (colpkr) {
+                $(colpkr).fadeOut(500);
+                return false;
+            },
+            onChange: function (hsb, hex, rgb) {
+                $('#colorSelector').css('backgroundColor', '#' + hex);
+                $("#graph").MPaint.SetColor('#' + hex);
+            }
+        });
+        $('#saveas').on("click",function(){
+            $("#graph").MPaint.SaveImage();
+        });
+        $('#eraser').on("click",function(){
+            $("#graph").MPaint.Eraser();
+        });
+        $('#clearpaint').on("click",function(){
+            $("#graph").MPaint.Clear();
+        });
+        $('#pen').on("click",function(){
+            $("#graph").MPaint.Pen();
+        });
+
+
+    });
+
+
+</script>
+
+</body>
+</html>
